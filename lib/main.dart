@@ -14,6 +14,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      showPerformanceOverlay: true,
       home: Scaffold(
         body: SafeArea(child: BenchMarkScreen()),
       ),
@@ -28,44 +29,47 @@ class BenchMarkScreen extends StatefulWidget {
   State<BenchMarkScreen> createState() => _BenchMarkScreenState();
 }
 
-class _BenchMarkScreenState extends State<BenchMarkScreen> with SingleTickerProviderStateMixin {
+class _BenchMarkScreenState extends State<BenchMarkScreen>
+    with SingleTickerProviderStateMixin {
   late Ticker _ticker;
-  List<Bunny> bunnies = [];
+  final List<Bunny> bunnies = [];
   Size _bounds = Size(100, 100);
   bool _isInitialized = false;
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  
-
-  Future<void> _initWithContext(BuildContext context) async{
+  Future<void> _initWithContext(BuildContext context) async {
     _bounds = MediaQuery.of(context).size;
-    bunnyImage = await loadImage("bunny_atlas.png");
-    _initBunnies();    
-    _ticker = createTicker((duration) {      
-      setState(() {
-        _updateBunnies();
-      });
+    final bunnyImage = await loadImage("bunny_atlas.png");
+    _initBunnies(bunnyImage);
+    _ticker = createTicker((_) {
+      setState(_updateBunnies);
     });
-    _ticker.start();    
-
+    _ticker.start();
 
     setState(() {});
   }
 
-  void _initBunnies() {
-    const int bunnyCount = 20000;
-    bunnies = [];
-    Random random = Random(33);
+  void _initBunnies(ui.Image bunnyImage) {
+    const int bunnyCount = 1500;
+    bunnies.clear();
+    final random = Random(33);
     for (int i = 0; i < bunnyCount; i++) {
-      double x = random.nextDouble() * _bounds.width;
-      double y = random.nextDouble() * _bounds.height;
-      Color color = Color(random.nextInt(0xFFFFFFFF));
-      Offset velocity = Offset(random.nextBool() ? 1 : -1, random.nextBool() ? 1 : -1);
-      bunnies.add(Bunny(x: x, y: y, velocity: velocity, atlasIndex: random.nextInt(4), color: color));
+      final x = random.nextDouble() * _bounds.width;
+      final y = random.nextDouble() * _bounds.height;
+      final color = Color(random.nextInt(0xFFFFFFFF));
+      final velocity = Offset(
+        random.nextBool() ? 1 : -1,
+        random.nextBool() ? 1 : -1,
+      );
+      bunnies.add(
+        Bunny(
+          image: bunnyImage,
+          x: x,
+          y: y,
+          velocity: velocity,
+          atlasIndex: random.nextInt(4),
+          color: color,
+        ),
+      );
     }
   }
 
@@ -94,12 +98,14 @@ class _BenchMarkScreenState extends State<BenchMarkScreen> with SingleTickerProv
     if (!_isInitialized) {
       SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
         _isInitialized = true;
-        _initWithContext(context);        
+        _initWithContext(context);
       });
       return Container();
     }
 
-    return SizedBox.expand(child: CustomPaint(painter: BunnyPainter(bunnies: bunnies)));
+    return SizedBox.expand(
+      child: CustomPaint(painter: BunnyPainter(bunnies: bunnies)),
+    );
   }
 
   @override
@@ -107,19 +113,24 @@ class _BenchMarkScreenState extends State<BenchMarkScreen> with SingleTickerProv
     _ticker.dispose();
     super.dispose();
   }
-
 }
 
-
-
 class Bunny {
+  final ui.Image image;
   double x;
   double y;
   Offset velocity;
-  int atlasIndex;
-  Color color;
-  
-  Bunny({required this.x, required this.y, required this.velocity, required this.atlasIndex, required this.color});  
+  final int atlasIndex;
+  final Color color;
+
+  Bunny({
+    required this.image,
+    required this.x,
+    required this.y,
+    required this.velocity,
+    required this.atlasIndex,
+    required this.color,
+  });
 }
 
 class BunnyPainter extends CustomPainter {
@@ -132,38 +143,33 @@ class BunnyPainter extends CustomPainter {
     Rect.fromLTWH(64, 64, 64, 64),
   ];
 
+  final Paint _paint = Paint();
+  final Rect _rect = Rect.fromLTWH(0, 0, 16, 16);
+
   BunnyPainter({required this.bunnies});
 
   @override
   void paint(Canvas canvas, Size size) {
     for (var bunny in bunnies) {
-      
-      Paint paint = Paint();
-      paint.colorFilter = ColorFilter.mode(bunny.color, BlendMode.modulate);
-      paint.isAntiAlias = true;
-      paint.filterQuality = FilterQuality.high;
+      _paint.colorFilter = ColorFilter.mode(bunny.color, BlendMode.modulate);
 
       canvas.save();
-      canvas.translate(bunny.x, bunny.y);      
+      canvas.translate(bunny.x, bunny.y);
       canvas.drawImageRect(
-        bunnyImage,
+        bunny.image,
         atlasRects[bunny.atlasIndex],
-        Rect.fromLTWH(0, 0, 16, 16),
-        paint);              
+        _rect,
+        _paint,
+      );
       canvas.restore();
-      
     }
   }
-  
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;  
-}
 
-late ui.Image bunnyImage;
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
 
 Future<ui.Image> loadImage(String imageName) async {
   final data = await rootBundle.load('assets/$imageName');
   return decodeImageFromList(data.buffer.asUint8List());
 }
-
-late ui.Image image;
