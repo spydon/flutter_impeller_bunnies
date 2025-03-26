@@ -49,7 +49,7 @@ class _BenchMarkScreenState extends State<BenchMarkScreen>
   }
 
   void _initBunnies(ui.Image bunnyImage) {
-    const int bunnyCount = 1500;
+    const int bunnyCount = 300;
     bunnies.clear();
     final random = Random(33);
     for (int i = 0; i < bunnyCount; i++) {
@@ -95,16 +95,22 @@ class _BenchMarkScreenState extends State<BenchMarkScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
-      SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-        _isInitialized = true;
-        _initWithContext(context);
-      });
-      return Container();
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!_isInitialized) {
+          if (!constraints.biggest.isEmpty) {
+            SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+              _isInitialized = true;
+              _initWithContext(context);
+            });
+          }
+          return Container();
+        }
 
-    return SizedBox.expand(
-      child: CustomPaint(painter: BunnyPainter(bunnies: bunnies)),
+        return SizedBox.expand(
+          child: CustomPaint(painter: BunnyPainter(bunnies: bunnies)),
+        );
+      },
     );
   }
 
