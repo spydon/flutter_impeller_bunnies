@@ -37,7 +37,7 @@ class _BenchMarkScreenState extends State<BenchMarkScreen>
   bool _isInitialized = false;
 
   Future<void> _initWithContext(BuildContext context) async {
-    _bounds = MediaQuery.of(context).size;
+    _bounds = MediaQuery.sizeOf(context);
     final bunnyImage = await loadImage("bunny_atlas.png");
     _initBunnies(bunnyImage);
     _ticker = createTicker((_) {
